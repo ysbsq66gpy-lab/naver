@@ -58,6 +58,10 @@ async function fetchBlogContent(url) {
 
 // API Endpoint
 app.get('/api/search', async (req, res) => {
+    if (!NAVER_CLIENT_ID || !NAVER_CLIENT_SECRET) {
+        return res.status(500).json({ error: 'Naver API keys are missing in environment variables.' });
+    }
+
     const query = req.query.q || '네이버쇼핑 파트너 제안';
     const blogs = await searchNaverBlogs(query, 5);
 
@@ -79,7 +83,13 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+// Vercel 배포를 위해 app을 export 합니다.
+module.exports = app;
+
+// 로컬 테스트를 위해 환경 변수가 없을 때만 listen 합니다.
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+    });
+}
