@@ -2,6 +2,9 @@
   "name": "naver",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "build": "echo 'No build step, just serving static files and API'"
+  },
   "dependencies": {
     "axios": "^1.6.0",
     "cheerio": "^1.0.0-rc.12"
