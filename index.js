@@ -8,7 +8,8 @@ const path = require('path');
 const NAVER_CLIENT_ID = process.env.NAVER_CLIENT_ID;
 const NAVER_CLIENT_SECRET = process.env.NAVER_CLIENT_SECRET;
 
-app.use(express.static('public'));
+const publicPath = path.join(__dirname, 'public');
+app.use(express.static(publicPath));
 
 /**
  * Naver 블로그 검색 API
@@ -18,8 +19,8 @@ async function searchNaverBlogs(query, display = 5) {
         const response = await axios.get(`https://openapi.naver.com/v1/search/blog.json`, {
             params: { query, display, sort: 'date' },
             headers: {
-                'X-Naver-Client-Id': NAVER_CLIENT_ID,
-                'X-Naver-Client-Secret': NAVER_CLIENT_SECRET
+                'X-Naver-Client-Id': process.env.NAVER_CLIENT_ID,
+                'X-Naver-Client-Secret': process.env.NAVER_CLIENT_SECRET
             }
         });
         return response.data.items;
@@ -58,8 +59,14 @@ async function fetchBlogContent(url) {
 
 // API Endpoint
 app.get('/api/search', async (req, res) => {
-    if (!NAVER_CLIENT_ID || !NAVER_CLIENT_SECRET) {
-        return res.status(500).json({ error: 'Naver API keys are missing in environment variables.' });
+    const clientId = process.env.NAVER_CLIENT_ID;
+    const clientSecret = process.env.NAVER_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+        return res.status(500).json({
+            error: 'Naver API keys are missing.',
+            details: 'Please check Vercel Environment Variables.'
+        });
     }
 
     const query = req.query.q || '네이버쇼핑 파트너 제안';
@@ -78,18 +85,16 @@ app.get('/api/search', async (req, res) => {
     res.json(results);
 });
 
-// Vercel은 SPA가 아닐 경우 명시적인 핸들링이 필요할 수 있음
+// 모든 경로에 대해 index.html 반환 (SPA 또는 정적 페이지 지원)
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(publicPath, 'index.html'));
 });
 
 // Vercel 배포를 위해 app을 export 합니다.
 module.exports = app;
 
-// 로컬 테스트를 위해 환경 변수가 없을 때만 listen 합니다.
+// 로컬 테스트용 (Vercel 환경이 아닐 때만 실행)
 if (process.env.NODE_ENV !== 'production') {
     const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`);
-    });
+    app.listen(PORT, () => console.log(`Local server: http://localhost:${PORT}`));
 }
